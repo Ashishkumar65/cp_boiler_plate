@@ -1,0 +1,458 @@
+
+#include <iostream>
+#include<limits.h>
+#include<numeric>
+#include <iomanip>
+#include <vector>
+#include <algorithm>
+#include <set>
+#include <map>
+#include <cmath>
+#include <stack>
+#include <string>
+#include <string.h>
+#include <utility>
+#include <sstream>
+#include<unordered_set>
+#include<list>
+#include<iterator>
+#include<deque>
+#include<queue>
+#include<stack>
+#include<bitset>
+#include<random>
+#include<unordered_map>
+#include<stdio.h>
+#include<complex>
+#include<math.h>
+#include<cstring>
+#include<chrono>
+#define fastio() ios_base::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL)
+#define auto(x, v) for (auto &x : v)
+#define sor(v) sort(v.begin(), v.end())
+#define fo(i, a, n) for (int i = a; i < n; i++)
+#define ob(i, a, n) for (int i = a; i <= n; i++)
+#define revl(i, a, n) for (int i = a; i >= n; i--)
+#define nl "\n"
+#define all(v) v.begin(),v.end()
+#define ll long long
+#define sp " "
+#define yes "YES"
+#define no "NO"
+#define ub upper_bound
+#define lb lower_bound
+#define sz(x) ((int)(x).size())
+
+const ll mod = 1e9+7;
+using namespace std;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+ll gcd(ll n,ll x){if(x==0){return n;}else{return gcd(x,n%x);}}
+ll countBit(ll n){ll res=0;while(n>0){if(n&1)res++;n=(n>>1);}return res;}
+ll pwr(ll a, ll b , ll c) {a %= c; ll res = 1; while (b > 0) {if (b & 1) res = res * a % c; a = a * a % c; b >>= 1;} return res;}
+ll mminvprime(ll a, ll b) {return pwr(a, b - 2, b);}
+ll mod_mul(ll a, ll b) {a = a % mod; b = b % mod; return (((a * b) % mod) + mod) % mod;}
+ll mod_mul(ll a, ll b, ll c) {a = a % c; b = b % c; return (((a * b) % c) + c) % c;}
+ll mod_add(ll a, ll b) {a = a % mod; b = b % mod; return (((a + b) % mod) + mod) % mod;}
+ll mod_sub(ll a, ll b, ll m) {a = a % m; b = b % m; return (((a - b) % m) + m) % m;}
+ll mod_div(ll a, ll b, ll m) {a = a % m; b = b % m; return (mod_mul(a, mminvprime(b, m), m) + m) % m;}  //only for prime m
+bool isPerfectSquare(ll x){if (x >= 0) {ll sr = sqrt(x);return (sr * sr == x);}return false;}
+bool isPrime(ll n){if(n<=1)return false;if(n<=3)return true;if(n%2==0||n%3==0)return false;for(int i=5;i*i<=n;i=i+6)if(n%i==0||n%(i+2)==0)return false;return true;}
+vector<ll> sieve(int n) {int*arr = new int[n + 1](); vector<ll> vect; for (int i = 2; i <= n; i++)if (arr[i] == 0) {vect.push_back(i); for (int j = 2 * i; j <= n; j += i)arr[j] = 1;} return vect;} 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+struct Hashing{
+    string s;
+    int n;
+    int primes;
+    vector<ll> hashPrimes = {1000000009};
+    const ll base = 31;
+    vector<vector<ll>> hashValues;
+    vector<vector<ll>> powersOfBase;
+    Hashing(string a){
+        primes = sz(hashPrimes);
+        hashValues.resize(primes);
+        powersOfBase.resize(primes);
+        s = a;
+        n = s.length(); 
+        for(int i = 0; i < sz(hashPrimes); i++) {
+            powersOfBase[i].resize(n + 1);
+            powersOfBase[i][0] = 1;
+            for(int j = 1; j <= n; j++){
+                powersOfBase[i][j] = (base * powersOfBase[i][j - 1]) % hashPrimes[i];
+            }
+        }
+        for(int i = 0; i < sz(hashPrimes); i++) {
+            hashValues[i].resize(n);
+            for(int j = 0; j < n; j++){
+                hashValues[i][j] = ((s[j] - 'a' + 1LL) * powersOfBase[i][j]) % hashPrimes[i];
+                hashValues[i][j] = (hashValues[i][j] + (j > 0 ? hashValues[i][j - 1] : 0LL)) % hashPrimes[i];
+            }
+        }
+    }
+    void addCharacter(char ch){
+        s += ch;
+        n = sz(s);
+        for(int i = 0; i < sz(hashPrimes); i++){
+            while(sz(powersOfBase[i]) < sz(s)){
+                powersOfBase[i].push_back((powersOfBase[i].back() * base) % hashPrimes[i]);   
+            }
+        }
+        for(int i = 0; i < sz(hashPrimes); i++){
+            while(sz(hashValues[i]) < sz(s)){
+                if(sz(hashValues[i]) == 0){
+                    hashValues[i].push_back((s[0] - 'a' + 1LL) % hashPrimes[i]);
+                }else{
+                    ll extraHash = hashValues[i].back() + ((s.back() - 'a' + 1LL) * powersOfBase[i][sz(s) - 1]) % hashPrimes[i];
+                    hashValues[i].push_back((extraHash + hashPrimes[i]) % hashPrimes[i]);
+                }
+            }
+        }
+    }
+    vector<ll> substringHash(int l, int r){ // extra O(log) factor
+        vector<ll> hash(primes);
+        for(int i = 0; i < primes; i++){
+            ll val1 = hashValues[i][r];
+            ll val2 = l > 0 ? hashValues[i][l - 1] : 0LL;
+            hash[i] = mod_mul(mod_sub(val1, val2, hashPrimes[i]), mminvprime(powersOfBase[i][l], hashPrimes[i]), hashPrimes[i]);
+        }
+        return hash;
+    }
+    bool compareSubstrings(int l1, int r1, int l2, int r2){ // use this for comparing strings faster
+        if(l1 > l2){
+            swap(l1, l2);
+            swap(r1, r2);
+        }
+        for(int i = 0; i < primes; i++){
+            ll val1 = mod_sub(hashValues[i][r1], (l1 > 0 ? hashValues[i][l1 - 1] : 0LL), hashPrimes[i]);
+            ll val2 = mod_sub(hashValues[i][r2], (l2 > 0 ? hashValues[i][l2 - 1] : 0LL), hashPrimes[i]);
+            if(mod_mul(val1, powersOfBase[i][l2 - l1], hashPrimes[i]) != val2)
+                return false;
+        }   
+        return true;
+    }
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void solve(){
+
+}
+int main()
+{
+    fastio();
+    ll t=1;
+    // cin>>t;
+    while (t--) {
+        solve();
+    }
+    return 0;
+}
+
+
+/////////////////
+{
+	"": {
+		"prefix": "disjoint",
+		"body": [
+		  "class DisjointSet{",
+		  "    public:",
+		  "    //zero based vertex",
+		  "    vector<int> parent,rank,size;",
+		  "    DisjointSet(int n){",
+		  "        rank.resize(n,0);",
+		  "        parent.resize(n);",
+		  "        size.resize(n,1);",
+		  "        for(int i=0;i<n;i++){",
+		  "            parent[i]=i;",
+		  "        }",
+		  "    }",
+		  "",
+		  "        int findPar(int node){",
+		  "            if(parent[node]==node)",
+		  "            return node;",
+		  "            return findPar(parent[node]);",
+		  "        }",
+		  "",
+		  "        void unionByRank(int u,int v){",
+		  "            int ulp_u=findPar(u);",
+		  "            int ulp_v=findPar(v);",
+		  "            if(ulp_u==ulp_v)",
+		  "            return;",
+		  "            if(rank[ulp_u] < rank[ulp_v]){",
+		  "                parent[ulp_u]=ulp_v;",
+		  "            }",
+		  "            else if(rank[ulp_v] <rank[ulp_u]){",
+		  "                parent[ulp_v]=ulp_u;",
+		  "            }",
+		  "            else{",
+		  "                parent[ulp_u]=ulp_v;",
+		  "                rank[ulp_v]++;",
+		  "            }",
+		  "        }",
+		  "",
+		  "        void unionBySize(int u,int v){",
+		  "            int ulp_u=findPar(u);",
+		  "            int ulp_v=findPar(v);",
+		  "            if(ulp_u==ulp_v)",
+		  "            return;",
+		  "            if(size[ulp_u] <size[ulp_v]){",
+		  "                parent[ulp_u]=ulp_v;",
+		  "                size[ulp_v]+=size[ulp_u];",
+		  "            }",
+		  "            else{",
+		  "                parent[ulp_v]=ulp_u;",
+		  "                size[ulp_u]+=size[ulp_v];",
+		  "            }",
+		  "        }",
+		  "",
+		  "    };"
+		],
+		"description": ""
+	  }
+}
+
+////////////////////////
+{
+	"": {
+		"prefix": "ashish",
+		"body": [
+		  "",
+		  "#include <iostream>",
+		  "#include<limits.h>",
+		  "#include<numeric>",
+		  "#include <iomanip>",
+		  "#include <vector>",
+		  "#include <algorithm>",
+		  "#include <set>",
+		  "#include <map>",
+		  "#include <cmath>",
+		  "#include <stack>",
+		  "#include <string>",
+		  "#include <string.h>",
+		  "#include <utility>",
+		  "#include <sstream>",
+		  "#include<unordered_set>",
+		  "#include<list>",
+		  "#include<iterator>",
+		  "#include<deque>",
+		  "#include<queue>",
+		  "#include<stack>",
+		  "#include<bitset>",
+		  "#include<random>",
+		  "#include<unordered_map>",
+		  "#include<stdio.h>",
+		  "#include<complex>",
+		  "#include<math.h>",
+		  "#include<cstring>",
+		  "#include<chrono>",
+		  "#define fastio() ios_base::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL)",
+		  "#define auto(x, v) for (auto &x : v)",
+		  "#define sor(v) sort(v.begin(), v.end())",
+		  "#define fo(i, a, n) for (int i = a; i < n; i++)",
+		  "#define ob(i, a, n) for (int i = a; i <= n; i++)",
+		  "#define revl(i, a, n) for (int i = a; i >= n; i--)",
+		  "#define nl \"\\n\"",
+		  "#define all(v) v.begin(),v.end()",
+		  "#define ll long long",
+		  "#define sp \" \"",
+		  "#define yes \"YES\"",
+		  "#define no \"NO\"",
+		  "#define ub upper_bound",
+		  "#define lb lower_bound",
+		  "#define sz(x) ((int)(x).size())",
+		  "",
+		  "const ll mod = 1e9+7;",
+		  "using namespace std;",
+		  "////////////////////////////////////////////////////////////////////////////////////////////////////////////////////",
+		  "",
+		  "",
+		  "ll gcd(ll n,ll x){if(x==0){return n;}else{return gcd(x,n%x);}}",
+		  "ll countBit(ll n){ll res=0;while(n>0){if(n&1)res++;n=(n>>1);}return res;}",
+		  "ll pwr(ll a, ll b , ll c) {a %= c; ll res = 1; while (b > 0) {if (b & 1) res = res * a % c; a = a * a % c; b >>= 1;} return res;}",
+		  "ll mminvprime(ll a, ll b) {return pwr(a, b - 2, b);}",
+		  "ll mod_mul(ll a, ll b) {a = a % mod; b = b % mod; return (((a * b) % mod) + mod) % mod;}",
+		  "ll mod_mul(ll a, ll b, ll c) {a = a % c; b = b % c; return (((a * b) % c) + c) % c;}",
+		  "ll mod_add(ll a, ll b) {a = a % mod; b = b % mod; return (((a + b) % mod) + mod) % mod;}",
+		  "ll mod_sub(ll a, ll b, ll m) {a = a % m; b = b % m; return (((a - b) % m) + m) % m;}",
+		  "ll mod_div(ll a, ll b, ll m) {a = a % m; b = b % m; return (mod_mul(a, mminvprime(b, m), m) + m) % m;}  //only for prime m",
+		  "bool isPerfectSquare(ll x){if (x >= 0) {ll sr = sqrt(x);return (sr * sr == x);}return false;}",
+		  "bool isPrime(ll n){if(n<=1)return false;if(n<=3)return true;if(n%2==0||n%3==0)return false;for(int i=5;i*i<=n;i=i+6)if(n%i==0||n%(i+2)==0)return false;return true;}",
+		  "vector<ll> sieve(int n) {int*arr = new int[n + 1](); vector<ll> vect; for (int i = 2; i <= n; i++)if (arr[i] == 0) {vect.push_back(i); for (int j = 2 * i; j <= n; j += i)arr[j] = 1;} return vect;} ",
+		  "",
+		  "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////",
+		  "",
+		  "",
+		  "struct Hashing{",
+		  "    string s;",
+		  "    int n;",
+		  "    int primes;",
+		  "    vector<ll> hashPrimes = {1000000009};",
+		  "    const ll base = 31;",
+		  "    vector<vector<ll>> hashValues;",
+		  "    vector<vector<ll>> powersOfBase;",
+		  "    Hashing(string a){",
+		  "        primes = sz(hashPrimes);",
+		  "        hashValues.resize(primes);",
+		  "        powersOfBase.resize(primes);",
+		  "        s = a;",
+		  "        n = s.length(); ",
+		  "        for(int i = 0; i < sz(hashPrimes); i++) {",
+		  "            powersOfBase[i].resize(n + 1);",
+		  "            powersOfBase[i][0] = 1;",
+		  "            for(int j = 1; j <= n; j++){",
+		  "                powersOfBase[i][j] = (base * powersOfBase[i][j - 1]) % hashPrimes[i];",
+		  "            }",
+		  "        }",
+		  "        for(int i = 0; i < sz(hashPrimes); i++) {",
+		  "            hashValues[i].resize(n);",
+		  "            for(int j = 0; j < n; j++){",
+		  "                hashValues[i][j] = ((s[j] - 'a' + 1LL) * powersOfBase[i][j]) % hashPrimes[i];",
+		  "                hashValues[i][j] = (hashValues[i][j] + (j > 0 ? hashValues[i][j - 1] : 0LL)) % hashPrimes[i];",
+		  "            }",
+		  "        }",
+		  "    }",
+		  "    void addCharacter(char ch){",
+		  "        s += ch;",
+		  "        n = sz(s);",
+		  "        for(int i = 0; i < sz(hashPrimes); i++){",
+		  "            while(sz(powersOfBase[i]) < sz(s)){",
+		  "                powersOfBase[i].push_back((powersOfBase[i].back() * base) % hashPrimes[i]);   ",
+		  "            }",
+		  "        }",
+		  "        for(int i = 0; i < sz(hashPrimes); i++){",
+		  "            while(sz(hashValues[i]) < sz(s)){",
+		  "                if(sz(hashValues[i]) == 0){",
+		  "                    hashValues[i].push_back((s[0] - 'a' + 1LL) % hashPrimes[i]);",
+		  "                }else{",
+		  "                    ll extraHash = hashValues[i].back() + ((s.back() - 'a' + 1LL) * powersOfBase[i][sz(s) - 1]) % hashPrimes[i];",
+		  "                    hashValues[i].push_back((extraHash + hashPrimes[i]) % hashPrimes[i]);",
+		  "                }",
+		  "            }",
+		  "        }",
+		  "    }",
+		  "    vector<ll> substringHash(int l, int r){ // extra O(log) factor",
+		  "        vector<ll> hash(primes);",
+		  "        for(int i = 0; i < primes; i++){",
+		  "            ll val1 = hashValues[i][r];",
+		  "            ll val2 = l > 0 ? hashValues[i][l - 1] : 0LL;",
+		  "            hash[i] = mod_mul(mod_sub(val1, val2, hashPrimes[i]), mminvprime(powersOfBase[i][l], hashPrimes[i]), hashPrimes[i]);",
+		  "        }",
+		  "        return hash;",
+		  "    }",
+		  "    bool compareSubstrings(int l1, int r1, int l2, int r2){ // use this for comparing strings faster",
+		  "        if(l1 > l2){",
+		  "            swap(l1, l2);",
+		  "            swap(r1, r2);",
+		  "        }",
+		  "        for(int i = 0; i < primes; i++){",
+		  "            ll val1 = mod_sub(hashValues[i][r1], (l1 > 0 ? hashValues[i][l1 - 1] : 0LL), hashPrimes[i]);",
+		  "            ll val2 = mod_sub(hashValues[i][r2], (l2 > 0 ? hashValues[i][l2 - 1] : 0LL), hashPrimes[i]);",
+		  "            if(mod_mul(val1, powersOfBase[i][l2 - l1], hashPrimes[i]) != val2)",
+		  "                return false;",
+		  "        }   ",
+		  "        return true;",
+		  "    }",
+		  "};",
+		  "",
+		  "/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////",
+		  "void solve(){",
+		  "",
+		  "}",
+		  "int main()",
+		  "{",
+		  "    fastio();",
+		  "    ll t=1;",
+		  "    // cin>>t;",
+		  "    while (t--) {",
+		  "        solve();",
+		  "    }",
+		  "    return 0;",
+		  "}"
+		],
+		"description": ""
+	  }
+}
+
+//////////////////
+{
+	"": {
+		"prefix": "string-hash",
+		"body": [
+			"struct Hashing{",
+			"    string s;",
+			"    int n;",
+			"    int primes;",
+			"    vector<ll> hashPrimes = {1000000009, 100000007};",
+			"    const ll base = 31;",
+			"    vector<vector<ll>> hashValues;",
+			"    vector<vector<ll>> powersOfBase;",
+			"    Hashing(string a){",
+			"        primes = sz(hashPrimes);",
+			"        hashValues.resize(primes);",
+			"        powersOfBase.resize(primes);",
+			"        s = a;",
+			"        n = s.length(); ",
+			"        for(int i = 0; i < sz(hashPrimes); i++) {",
+			"            powersOfBase[i].resize(n + 1);",
+			"            powersOfBase[i][0] = 1;",
+			"            for(int j = 1; j <= n; j++){",
+			"                powersOfBase[i][j] = (base * powersOfBase[i][j - 1]) % hashPrimes[i];",
+			"            }",
+			"        }",
+			"        for(int i = 0; i < sz(hashPrimes); i++) {",
+			"            hashValues[i].resize(n);",
+			"            for(int j = 0; j < n; j++){",
+			"                hashValues[i][j] = ((s[j] - 'a' + 1LL) * powersOfBase[i][j]) % hashPrimes[i];",
+			"                hashValues[i][j] = (hashValues[i][j] + (j > 0 ? hashValues[i][j - 1] : 0LL)) % hashPrimes[i];",
+			"            }",
+			"        }",
+			"    }",
+			"    void addCharacter(char ch){",
+			"        s += ch;",
+			"        n = sz(s);",
+			"        for(int i = 0; i < sz(hashPrimes); i++){",
+			"            while(sz(powersOfBase[i]) < sz(s)){",
+			"                powersOfBase[i].pb((powersOfBase[i].back() * base) % hashPrimes[i]);   ",
+			"            }",
+			"        }",
+			"        for(int i = 0; i < sz(hashPrimes); i++){",
+			"            while(sz(hashValues[i]) < sz(s)){",
+			"                if(sz(hashValues[i]) == 0){",
+			"                    hashValues[i].pb((s[0] - 'a' + 1LL) % hashPrimes[i]);",
+			"                }else{",
+			"                    ll extraHash = hashValues[i].back() + ((s.back() - 'a' + 1LL) * powersOfBase[i][sz(s) - 1]) % hashPrimes[i];",
+			"                    hashValues[i].pb((extraHash + hashPrimes[i]) % hashPrimes[i]);",
+			"                }",
+			"            }",
+			"        }",
+			"    }",
+			"    vector<ll> substringHash(int l, int r){ // extra O(log) factor",
+			"        vector<ll> hash(primes);",
+			"        for(int i = 0; i < primes; i++){",
+			"            ll val1 = hashValues[i][r];",
+			"            ll val2 = l > 0 ? hashValues[i][l - 1] : 0LL;",
+			"            hash[i] = mod_mul(mod_sub(val1, val2, hashPrimes[i]), mminvprime(powersOfBase[i][l], hashPrimes[i]), hashPrimes[i]);",
+			"        }",
+			"        return hash;",
+			"    }",
+			"    bool compareSubstrings(int l1, int r1, int l2, int r2){ // use this for comparing strings faster",
+			"        if(l1 > l2){",
+			"            swap(l1, l2);",
+			"            swap(r1, r2);",
+			"        }",
+			"        for(int i = 0; i < primes; i++){",
+			"            ll val1 = mod_sub(hashValues[i][r1], (l1 > 0 ? hashValues[i][l1 - 1] : 0LL), hashPrimes[i]);",
+			"            ll val2 = mod_sub(hashValues[i][r2], (l2 > 0 ? hashValues[i][l2 - 1] : 0LL), hashPrimes[i]);",
+			"            if(mod_mul(val1, powersOfBase[i][l2 - l1], hashPrimes[i]) != val2)",
+			"                return false;",
+			"        }   ",
+			"        return true;",
+			"    }",
+			"};"
+		],
+		"description": ""
+	}
+}
